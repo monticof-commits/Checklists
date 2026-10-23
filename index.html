@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Checklist Tareas - Edificio StF</title>
+    
+    <!-- Meta etiquetas para PWA / Mobile Home Screen -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Checklist StF">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- Icono de la aplicación (Logo adjuntado convertido a base64 para independencia de archivos) -->
+    <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABGAQMAAADeY47hAAAABlBMVEUAAAD///+l2Z/dAAAAAXRSTlMAQObYZgAAAD1JREFUeNpjYBgFo2AUjIJRMApGwSgYBaNgFIyCwgcMDAz//0D4MAsTIwMDA8N/EPwPAn8w8D8S+B8NfAQAAMVvG6H6ST9DAAAAAElFTkSuQmCC">
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABGAQMAAADeY47hAAAABlBMVEUAAAD///+l2Z/dAAAAAXRSTlMAQObYZgAAAD1JREFUeNpjYBgFo2AUjIJRMApGwSgYBaNgFIyCwgcMDAz//0D4MAsTIwMDA8N/EPwPAn8w8D8S+B8NfAQAAMVvG6H6ST9DAAAAAElFTkSuQmCC">
+
+    <!-- Librería html2pdf para exportar a PDF de manera local y fiel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-main: #333333;
+            --header-bg: #000000;
+            --header-text: #ffffff;
+            --border-color: #cccccc;
+            --btn-add: #28a745;
+            --btn-pdf: #007bff;
+            --btn-reset: #dc3545;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 15px;
+            padding-bottom: 60px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        /* Bloque Superior con Logo y Título */
+        .brand-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--header-bg);
+            padding-bottom: 10px;
+        }
+
+        .brand-logo {
+            background-color: #000;
+            padding: 10px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100px;
+        }
+
+        .brand-logo svg {
+            width: 100%;
+            height: auto;
+        }
+
+        .main-title {
+            font-size: 22px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: right;
+        }
+
+        .sub-header-info {
+            margin-bottom: 15px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        /* Controles de Filtro y Acciones */
+        .controls-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        select, input[type="text"], input[type="date"] {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+            background: #fff;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 13px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            color: #fff;
+        }
+
+        button:active {
+            opacity: 0.8;
+        }
+
+        .btn-add { background-color: var(--btn-add); }
+        .btn-pdf { background-color: var(--btn-pdf); }
+        .btn-reset { background-color: var(--btn-reset); }
+
+        /* Estructura de la Tabla Original */
+        .table-responsive {
+            overflow-x: auto;
+            margin-bottom: 25px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th {
+            background-color: var(--header-bg);
+            color: var(--header-text);
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 10px;
+            text-align: left;
+        }
+
+        td {
+            border: 1px solid var(--border-color);
+            padding: 6px;
+        }
+
+        table input, table select {
+            width: 100%;
+            border: none;
+            background: transparent;
+            padding: 4px;
+            font-size: 13px;
+        }
+
+        table input:focus, table select:focus {
+            background-color: #eef2f7;
+            outline: none;
+        }
+
+        .action-cell {
+            text-align: center;
+            width: 40px;
+        }
+
+        .btn-delete {
+            background: transparent;
+            color: var(--btn-reset);
+            font-size: 16px;
+            padding: 0;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* Sección de Contratista */
+        .contractor-section {
+            margin-top: 20px;
+            border-top: 1px dashed var(--border-color);
+            padding-top: 15px;
+        }
+
+        .contractor-table {
+            max-width: 400px;
+        }
+
+        /* Estilos específicos para la exportación limpia a PDF */
+        .no-print {
+            /* Elementos ocultos en el PDF */
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="dashboard-content">
+    
+    <!-- Encabezado Fiel al PDF original -->
+    <div class="brand-header">
+        <div class="brand-logo">
+            <!-- Monocromo estilizado imitando el logo de 3dF DESARROLLOS enviado -->
+            <svg viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg">
+                <text x="5" y="35" font-family="Arial, sans-serif" font-weight="900" font-size="38" fill="#FFF">3dF</text>
+                <text x="6" y="52" font-family="Arial, sans-serif" font-weight="bold" font-size="9" fill="#FFF" letter-spacing="1">DESARROLLOS</text>
+            </svg>
+        </div>
+        <div class="main-title">
+            Checklist Tareas
+        </div>
+    </div>
+
+    <div class="sub-header-info">
+        OBRA: Edificio StF
+    </div>
+
+    <!-- Panel de Control e Interacción Móvil -->
+    <div class="controls-panel no-print">
+        <div class="filter-group">
+            <label for="rubro-filter" style="font-size: 13px; font-weight: bold;">Filtrar por Rubro:</label>
+            <select id="rubro-filter" onchange="applyFilter()">
+                <option value="todos">-- Todos los rubros --</option>
+            </select>
+        </div>
+        <div class="btn-group">
+            <button class="btn-add" onclick="addNewRow()">+ Renglón</button>
+            <button class="btn-pdf" onclick="exportToPDF()">Exportar PDF</button>
+            <button class="btn-reset" onclick="resetToDefault()">Resetear</button>
+        </div>
+    </div>
+
+    <!-- Tabla Principal de Tareas -->
+    <div class="table-responsive">
+        <table id="tasks-table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Tarea</th>
+                    <th>Piso</th>
+                    <th>Unidad</th>
+                    <th>Ambiente</th>
+                    <th>Ejecutado</th>
+                    <th>Rubro</th>
+                    <th class="action-cell no-print"></th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                <!-- Se inyecta dinámicamente o lee de localStorage -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Módulo de Contratista Ingresado (Página 2 del original) -->
+    <div class="contractor-section">
+        <table class="contractor-table">
+            <thead>
+                <tr>
+                    <th>Contratista</th>
+                    <th>Ingresado</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><input type="text" id="contractor-name" value="Chacal" oninput="saveContractorData()"></td>
+                    <td><input type="text" id="contractor-role" value="Coordinador de Obra" oninput="saveContractorData()"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+    // Datos iniciales idénticos al PDF original para el primer arranque o reset
+    const defaultData = [
+        { fecha: "2026-10-09", tarea: "Ejecutar cierres espacios técnicos", piso: "6", unidad: "A", ambiente: "General", ejecutado: "SI", rubro: "Albañilería" }
+    ];
+
+    // Cargar datos al iniciar
+    window.addEventListener('DOMContentLoaded', () => {
+        if (!localStorage.getItem('checklist_tasks')) {
+            localStorage.setItem('checklist_tasks', JSON.stringify(defaultData));
+        }
+        if (!localStorage.getItem('contractor_name')) {
+            localStorage.setItem('contractor_name', "Chacal");
+            localStorage.setItem('contractor_role', "Coordinador de Obra");
+        }
+        renderTable();
+        loadContractorData();
+    });
+
+    function renderTable() {
+        const tasks = JSON.parse(localStorage.getItem('checklist_tasks')) || [];
+        const tbody = document.getElementById('table-body');
+        tbody.innerHTML = '';
+
+        tasks.forEach((task, index) => {
+            const row = document.createElement('tr');
+            row.setAttribute('data-index', index);
+            
+            row.innerHTML = `
+                <td><input type="date" value="${task.fecha}" onchange="updateTask(${index}, 'fecha', this.value)"></td>
+                <td><input type="text" value="${task.tarea}" oninput="updateTask(${index}, 'tarea', this.value)"></td>
+                <td><input type="text" value="${task.piso}" oninput="updateTask(${index}, 'piso', this.value)"></td>
+                <td><input type="text" value="${task.unidad}" oninput="updateTask(${index}, 'unidad', this.value)"></td>
+                <td><input type="text" value="${task.ambiente}" oninput="updateTask(${index}, 'ambiente', this.value)"></td>
+                <td>
+                    <select onchange="updateTask(${index}, 'ejecutado', this.value)">
+                        <option value="SI" ${task.ejecutado === 'SI' ? 'selected' : ''}>SI</option>
+                        <option value="NO" ${task.ejecutado === 'NO' ? 'selected' : ''}>NO</option>
+                    </select>
+                </td>
+                <td><input type="text" value="${task.rubro}" oninput="updateTask(${index}, 'rubro', this.value)" onblur="populateFilterDropdown()"></td>
+                <td class="action-cell no-print">
+                    <button class="btn-delete" onclick="deleteRow(${index})">🗑️</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        populateFilterDropdown();
+    }
+
+    function addNewRow() {
+        const tasks = JSON.parse(localStorage.getItem('checklist_tasks')) || [];
+        const today = new Date().toISOString().split('T')[0];
+        tasks.push({ fecha: today, tarea: "", piso: "", unidad: "", ambiente: "", ejecutado: "NO", rubro: "" });
+        localStorage.setItem('checklist_tasks', JSON.stringify(tasks));
+        renderTable();
+    }
+
+    function updateTask(index, field, value) {
+        const tasks = JSON.parse(localStorage.getItem('checklist_tasks')) || [];
+        tasks[index][field] = value;
+        localStorage.setItem('checklist_tasks', JSON.stringify(tasks));
+        if (field === 'rubro') {
+            // No renderizar completo mientras se escribe para no perder el foco, solo actualizar dropdown al salir o cambiar
+        }
+    }
+
+    function deleteRow(index) {
+        let tasks = JSON.parse(localStorage.getItem('checklist_tasks')) || [];
+        tasks.splice(index, 1);
+        localStorage.setItem('checklist_tasks', JSON.stringify(tasks));
+        renderTable();
+    }
+
+    function loadContractorData() {
+        document.getElementById('contractor-name').value = localStorage.getItem('contractor_name') || "";
+        document.getElementById('contractor-role').value = localStorage.getItem('contractor_role') || "";
+    }
+
+    function saveContractorData() {
+        localStorage.setItem('contractor_name', document.getElementById('contractor-name').value);
+        localStorage.setItem('contractor_role', document.getElementById('contractor-role').value);
+    }
+
+    function populateFilterDropdown() {
+        const tasks = JSON.parse(localStorage.getItem('checklist_tasks')) || [];
+        const filterSelect = document.getElementById('rubro-filter');
+        const currentValue = filterSelect.value;
+        
+        // Obtener rubros únicos no vacíos
+        const rubros = [...new Set(tasks.map(t => t.rubro.trim()).filter(r => r !== ""))];
+        
+        filterSelect.innerHTML = '<option value="todos">-- Todos los rubros --</option>';
+        rubros.forEach(rubro => {
+            const opt = document.createElement('option');
+            opt.value = rubro.toLowerCase();
+            opt.textContent = rubro;
+            if (currentValue === rubro.toLowerCase()) {
+                opt.selected = true;
+            }
+            filterSelect.appendChild(opt);
+        });
+    }
+
+    function applyFilter() {
+        const filterValue = document.getElementById('rubro-filter').value;
+        const rows = document.querySelectorAll('#table-body tr');
+        const tasks = JSON.parse(localStorage.getItem('checklist_tasks')) || [];
+
+        rows.forEach(row => {
+            const index = row.getAttribute('data-index');
+            const rubro = tasks[index].rubro.toLowerCase().trim();
+            if (filterValue === 'todos' || rubro === filterValue) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    function resetToDefault() {
+        if(confirm("¿Seguro que desea resetear el cuadro de mando a los valores originales del PDF? Se borrarán los cambios locales.")) {
+            localStorage.setItem('checklist_tasks', JSON.stringify(defaultData));
+            localStorage.setItem('contractor_name', "Chacal");
+            localStorage.setItem('contractor_role', "Coordinador de Obra");
+            renderTable();
+            loadContractorData();
+            document.getElementById('rubro-filter').value = 'todos';
+        }
+    }
+
+    function exportToPDF() {
+        // Ocultar temporalmente los controles interactivos y de eliminación para un documento limpio
+        const elementsToHide = document.querySelectorAll('.no-print');
+        elementsToHide.forEach(el => el.style.visibility = 'hidden');
+
+        const element = document.getElementById('dashboard-content');
+        const opt = {
+            margin:       10,
+            filename:     'Dashboard_Edificio_StF.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        html2pdf().set(opt).from(element).save().then(() => {
+            // Restaurar visibilidad de los elementos interactivos
+            elementsToHide.forEach(el => el.style.visibility = 'visible');
+        });
+    }
+</script>
+
+</body>
+</html>
