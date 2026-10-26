@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>3dF Checklist</title>
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="3dF Checklist">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&display=swap" rel="stylesheet">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<style>
+:root{
+  --negro:#000;
+  --blanco:#fff;
+  --gris-1:#f3f3f3;
+  --gris-2:#dcdcdc;
+  --gris-3:#8a8a8a;
+  --gris-4:#444;
+  --fuente:'Archivo',-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--blanco);color:var(--negro);
+  font-family:var(--fuente);font-size:15px;line-height:1.35;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--negro);outline-offset:2px}
+
+/* Cabecera */
+header{
+  background:var(--negro);color:var(--blanco);
+  padding:calc(env(safe-area-inset-top,0px) + 14px) 20px 18px;
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+}
+.logo{height:52px;width:auto;display:block}
+.titulo{flex:1;min-width:200px}
+.titulo h1{margin:0;font-size:26px;font-weight:800;letter-spacing:.01em}
+.obra{display:flex;align-items:center;gap:6px;margin-top:2px;color:var(--gris-2)}
+.obra input{
+  background:transparent;border:0;border-bottom:1px solid #444;color:var(--blanco);
+  font-weight:600;padding:2px 0;width:min(260px,60vw);
+}
+.ficha{display:grid;grid-template-columns:auto auto;gap:2px 10px;font-size:12px;color:var(--gris-2);text-align:right}
+.ficha input{
+  background:transparent;border:0;border-bottom:1px solid #444;color:var(--blanco);
+  width:92px;text-align:right;padding:1px 0;font-size:12px;
+}
+
+main{max-width:1280px;margin:0 auto;padding:18px 16px 40px}
+
+/* Resumen */
+.resumen{display:flex;gap:28px;align-items:flex-end;flex-wrap:wrap;margin-bottom:6px}
+.dato{display:flex;flex-direction:column}
+.dato b{font-size:40px;line-height:1;font-weight:800}
+.dato span{font-size:13px;color:var(--gris-4);margin-top:4px}
+.avance{flex:1;min-width:200px}
+.avance .txt{display:flex;justify-content:space-between;font-size:13px;color:var(--gris-4);margin-bottom:6px}
+.barra{height:12px;border:2px solid var(--negro);background:var(--blanco)}
+.barra i{display:block;height:100%;background:var(--negro);width:0;transition:width .35s ease}
+
+/* Controles */
+.controles{
+  display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+  padding:14px 0;margin:10px 0 4px;border-top:2px solid var(--negro);
+}
+.seg{display:inline-flex;border:2px solid var(--negro)}
+.seg button{
+  background:var(--blanco);border:0;padding:9px 14px;cursor:pointer;font-weight:600;
+  border-right:2px solid var(--negro);
+}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--negro);color:var(--blanco)}
+select,.buscar{
+  border:2px solid var(--negro);background:var(--blanco);padding:9px 10px;min-height:42px;border-radius:0;
+}
+.buscar{flex:1;min-width:140px}
+.btn{
+  border:2px solid var(--negro);background:var(--blanco);padding:9px 14px;min-height:42px;
+  cursor:pointer;font-weight:600;border-radius:0;
+}
+.btn.primario{background:var(--negro);color:var(--blanco)}
+.btn:active{transform:translateY(1px)}
+
+/* Tabla */
+.tabla-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:1180px}
+thead th{
+  background:var(--negro);color:var(--blanco);text-align:left;font-weight:600;
+  padding:10px 8px;font-size:13px;white-space:nowrap;
+}
+tbody td{border-bottom:1px solid var(--gris-2);padding:4px;vertical-align:top}
+tbody tr:nth-child(even){background:var(--gris-1)}
+tbody tr.hecha .tarea{color:var(--gris-3);text-decoration:line-through}
+td input,td textarea{
+  width:100%;border:1px solid transparent;background:transparent;padding:7px 6px;border-radius:0;
+  resize:none;overflow:hidden;
+}
+td input:hover,td textarea:hover{border-color:var(--gris-2)}
+td input:focus,td textarea:focus{border-color:var(--negro);background:var(--blanco);outline:none}
+.c-fecha{width:128px}.c-piso{width:56px}.c-unidad{width:70px}
+.c-estado{width:96px}.c-acc{width:44px}
+.estado{
+  width:100%;min-height:36px;border:2px solid var(--negro);background:var(--blanco);
+  font-weight:800;cursor:pointer;letter-spacing:.04em;
+}
+.estado[data-v="SI"]{background:var(--negro);color:var(--blanco)}
+.borrar{
+  width:36px;height:36px;border:0;background:transparent;font-size:22px;line-height:1;
+  cursor:pointer;color:var(--gris-3);
+}
+.borrar:hover{color:var(--negro)}
+.vacio{padding:40px 10px;text-align:center;color:var(--gris-4)}
+.pie{margin-top:14px;font-size:12px;color:var(--gris-3)}
+
+/* Celular: cada tarea es una tarjeta */
+.c-fotos{width:160px}
+.fotos{display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:2px}
+.mini{width:42px;height:42px;object-fit:cover;border:2px solid var(--negro);cursor:pointer;background:var(--gris-2)}
+.btn-foto{position:relative;display:inline-flex;align-items:center;min-height:36px;padding:0 10px;border:2px dashed var(--negro);font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap}
+.file{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:0}
+.chk{display:inline-flex;align-items:center;gap:6px;font-size:13px}
+.chk input{width:18px;height:18px;accent-color:#000}
+#visor{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.94);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px}
+#visor[hidden]{display:none}
+#visor img{max-width:100%;max-height:78vh;object-fit:contain}
+#visor div{display:flex;gap:10px}
+@media (max-width:820px){
+  header{padding-left:16px;padding-right:16px}
+  .ficha{text-align:left}
+  table{min-width:0}
+  thead{display:none}
+  table,tbody,tr,td{display:block;width:100%}
+  tbody tr{
+    border:2px solid var(--negro);margin:0 0 14px;padding:8px;background:var(--blanco)!important;
+    display:grid;grid-template-columns:1fr 1fr;gap:6px 8px;
+  }
+  tbody td{border:0;padding:0;width:auto}
+  td::before{
+    content:attr(data-l);display:block;font-size:11px;color:var(--gris-3);margin:0 0 1px 6px;
+  }
+  td.c-tarea{grid-column:1/3}
+  td.c-acc{grid-column:1/3;text-align:right}
+  td.c-fotos{grid-column:1/3}
+  .mini{width:64px;height:64px}
+  td.c-acc::before{display:none}
+  td input,td textarea{font-size:16px;border-color:var(--gris-2);background:var(--blanco)}
+  .c-fecha,.c-piso,.c-unidad,.c-estado,.c-acc{width:auto}
+  .estado{min-height:44px}
+  .controles .seg{width:100%}
+  .controles .seg button{flex:1}
+  select,.buscar{flex:1 1 140px;font-size:16px}
+}
+@media print{
+  .controles,.c-acc,.borrar,.pie{display:none!important}
+}
+@media (prefers-reduced-motion:reduce){.barra i{transition:none}}
+</style>
+</head>
+<body>
+
+<header>
+  <img class="logo" src="logo.png" alt="3dF Desarrollos">
+  <div class="titulo">
+    <h1>CHECKLIST TAREAS</h1>
+    <div class="obra"><label for="obra">Obra:</label><input id="obra" data-meta="obra" autocomplete="off"></div>
+  </div>
+  <div class="ficha">
+    <input data-meta="codigo" aria-label="Código" autocomplete="off">
+    <span></span>
+    <span>Versión</span><input data-meta="version" aria-label="Versión" autocomplete="off">
+    <span>Fecha</span><input data-meta="fecha" aria-label="Fecha del documento" autocomplete="off">
+  </div>
+</header>
+
+<main>
+  <section class="resumen" aria-label="Resumen">
+    <div class="dato"><b id="n-total">0</b><span>Tareas</span></div>
+    <div class="dato"><b id="n-pend">0</b><span>Pendientes</span></div>
+    <div class="dato"><b id="n-hechas">0</b><span>Ejecutadas</span></div>
+    <div class="avance">
+      <div class="txt"><span>Avance</span><span id="pct">0%</span></div>
+      <div class="barra"><i id="barra"></i></div>
+    </div>
+  </section>
+
+  <section class="controles" aria-label="Filtros">
+    <div class="seg" role="group" aria-label="Filtrar por estado">
+      <button type="button" data-estado="todas" aria-pressed="true">Todas</button>
+      <button type="button" data-estado="NO" aria-pressed="false">Pendientes</button>
+      <button type="button" data-estado="SI" aria-pressed="false">Ejecutadas</button>
+    </div>
+    <select id="f-rubro" aria-label="Filtrar por rubro"></select>
+    <input class="buscar" id="f-texto" type="search" placeholder="Buscar tarea, ambiente, contratista…" aria-label="Buscar">
+    <button class="btn primario" id="agregar" type="button">+ Nueva tarea</button>
+    <button class="btn" id="pdf" type="button">Exportar PDF</button>
+    <label class="chk"><input type="checkbox" id="pdf-fotos" checked> Fotos en PDF y Excel</label>
+    <button class="btn" id="xls" type="button">Exportar Excel</button>
+    <button class="btn" id="csv" type="button">Exportar CSV</button>
+  </section>
+
+  <div class="tabla-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="c-fecha">Fecha</th>
+          <th>Tarea</th>
+          <th class="c-piso">Piso</th>
+          <th class="c-unidad">Unidad</th>
+          <th>Ambiente</th>
+          <th class="c-estado">Ejecutado</th>
+          <th>Rubro</th>
+          <th>Contratista</th>
+          <th>Ingresado</th>
+          <th class="c-fotos">Fotos</th>
+          <th class="c-acc"><span class="sr" aria-hidden="true"></span></th>
+        </tr>
+      </thead>
+      <tbody id="filas"></tbody>
+    </table>
+    <div class="vacio" id="vacio" hidden>No hay tareas con estos filtros.</div>
+  </div>
+
+  <p class="pie">Los cambios se guardan automáticamente en este dispositivo. Para pasarlos a otro equipo, usá Exportar CSV.</p>
+</main>
+
+<datalist id="dl-rubro"></datalist>
+<datalist id="dl-contratista"></datalist>
+<datalist id="dl-ambiente"></datalist>
+<datalist id="dl-ingresado"></datalist>
+
+<script>
+(function(){
+  'use strict';
+  var KEY = '3df-checklist-edificio-stf-v2';
+
+  var INICIAL = {
+    meta: { obra:'Edificio StF', codigo:'R-D00-P17', version:'1', fecha:'20/01/2026' },
+    rows: [],
+    nextId: 1
+  };
+
+  var state;
+  try { state = JSON.parse(localStorage.getItem(KEY)); } catch(e){ state = null; }
+  if (!state || !Array.isArray(state.rows) || !state.meta) {
+    state = JSON.parse(JSON.stringify(INICIAL));
+  }
+
+  var filtro = { estado:'todas', rubro:'', texto:'' };
+  var photoCache = {};
+
+  var $ = function(s){ return document.querySelector(s); };
+  var tbody = $('#filas');
+
+  function guardar(){
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){}
+  }
+
+  function hoyISO(){
+    var d = new Date();
+    var m = String(d.getMonth()+1).padStart(2,'0');
+    var dd = String(d.getDate()).padStart(2,'0');
+    return d.getFullYear()+'-'+m+'-'+dd;
+  }
+
+  function norm(s){
+    return String(s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  }
+
+  function unicos(campo){
+    var vistos = {}, out = [];
+    state.rows.forEach(function(r){
+      var v = String(r[campo]||'').trim();
+      var k = norm(v);
+      if (v && !vistos[k]) { vistos[k] = 1; out.push(v); }
+    });
+    return out.sort(function(a,b){ return a.localeCompare(b,'es'); });
+  }
+
+  function llenarDatalist(id, campo){
+    var dl = document.getElementById(id);
+    dl.innerHTML = '';
+    unicos(campo).forEach(function(v){
+      var o = document.createElement('option'); o.value = v; dl.appendChild(o);
+    });
+  }
+
+  function actualizarListas(){
+    llenarDatalist('dl-rubro','rubro');
+    llenarDatalist('dl-contratista','contratista');
+    llenarDatalist('dl-ambiente','ambiente');
+    llenarDatalist('dl-ingresado','ingresado');
+
+    var sel = $('#f-rubro');
+    var rubros = unicos('rubro');
+    if (filtro.rubro && !rubros.some(function(r){ return norm(r)===norm(filtro.rubro); })) filtro.rubro = '';
+    sel.innerHTML = '';
+    var o0 = document.createElement('option'); o0.value=''; o0.textContent='Todos los rubros'; sel.appendChild(o0);
+    rubros.forEach(function(r){
+      var o = document.createElement('option'); o.value = r; o.textContent = r;
+      if (norm(r)===norm(filtro.rubro)) o.selected = true;
+      sel.appendChild(o);
+    });
+  }
+
+  function actualizarResumen(){
+    var total = state.rows.length;
+    var hechas = state.rows.filter(function(r){ return r.ejecutado==='SI'; }).length;
+    var pct = total ? Math.round(hechas*100/total) : 0;
+    $('#n-total').textContent = total;
+    $('#n-hechas').textContent = hechas;
+    $('#n-pend').textContent = total - hechas;
+    $('#pct').textContent = pct + '%';
+    $('#barra').style.width = pct + '%';
+  }
+
+  function visible(r){
+    if (filtro.estado !== 'todas' && r.ejecutado !== filtro.estado) return false;
+    if (filtro.rubro && norm(r.rubro) !== norm(filtro.rubro)) return false;
+    if (filtro.texto){
+      var t = norm(filtro.texto);
+      var pajar = norm([r.tarea,r.ambiente,r.rubro,r.contratista,r.ingresado,r.piso,r.unidad].join(' '));
+      if (pajar.indexOf(t) === -1) return false;
+    }
+    return true;
+  }
+
+  function celda(clase, etiqueta, hijo){
+    var td = document.createElement('td');
+    if (clase) td.className = clase;
+    td.setAttribute('data-l', etiqueta);
+    td.appendChild(hijo);
+    return td;
+  }
+
+  function campoInput(r, campo, tipo, lista, etiqueta){
+    var i = document.createElement('input');
+    i.type = tipo || 'text';
+    i.value = r[campo] || '';
+    i.setAttribute('data-f', campo);
+    i.setAttribute('aria-label', etiqueta);
+    i.autocomplete = 'off';
+    if (lista) i.setAttribute('list', lista);
+    return i;
+  }
+
+  function crearFila(r){
+    var tr = document.createElement('tr');
+    tr.setAttribute('data-id', r.id);
+    if (r.ejecutado === 'SI') tr.className = 'hecha';
+
+    tr.appendChild(celda('c-fecha','Fecha', campoInput(r,'fecha','date',null,'Fecha')));
+
+    var ta = document.createElement('textarea');
+    ta.rows = 1; ta.value = r.tarea || ''; ta.className = 'tarea';
+    ta.setAttribute('data-f','tarea'); ta.setAttribute('aria-label','Tarea');
+    tr.appendChild(celda('c-tarea','Tarea', ta));
+
+    tr.appendChild(celda('c-piso','Piso', campoInput(r,'piso','text',null,'Piso')));
+    tr.appendChild(celda('c-unidad','Unidad', campoInput(r,'unidad','text',null,'Unidad')));
+    tr.appendChild(celda('c-ambiente','Ambiente', campoInput(r,'ambiente','text','dl-ambiente','Ambiente')));
+
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'estado'; b.setAttribute('data-act','toggle');
+    b.setAttribute('data-v', r.ejecutado);
+    b.textContent = r.ejecutado === 'SI' ? 'SÍ' : 'NO';
+    b.setAttribute('aria-label','Ejecutado: ' + (r.ejecutado==='SI'?'sí':'no') + '. Tocar para cambiar');
+    tr.appendChild(celda('c-estado','Ejecutado', b));
+
+    tr.appendChild(celda('c-rubro','Rubro', campoInput(r,'rubro','text','dl-rubro','Rubro')));
+    tr.appendChild(celda('c-contratista','Contratista', campoInput(r,'contratista','text','dl-contratista','Contratista')));
+    tr.appendChild(celda('c-ingresado','Ingresado por', campoInput(r,'ingresado','text','dl-ingresado','Ingresado por')));
+
+    var cf = document.createElement('div'); cf.className = 'fotos';
+    (r.fotos || []).forEach(function(id){
+      var im = document.createElement('img'); im.className = 'mini'; im.alt = 'Foto de la tarea';
+      im.setAttribute('data-act','ver'); im.setAttribute('data-foto', id);
+      if (photoCache[id]) im.src = photoCache[id].data;
+      cf.appendChild(im);
+    });
+    var lb = document.createElement('label'); lb.className = 'btn-foto'; lb.appendChild(document.createTextNode('+ Foto'));
+    var fi = document.createElement('input'); fi.type = 'file'; fi.accept = 'image/*'; fi.multiple = true;
+    fi.className = 'file'; fi.setAttribute('aria-label','Agregar fotos a la tarea');
+    lb.appendChild(fi); cf.appendChild(lb);
+    tr.appendChild(celda('c-fotos','Fotos', cf));
+
+    var x = document.createElement('button');
+    x.type = 'button'; x.className = 'borrar'; x.setAttribute('data-act','borrar');
+    x.setAttribute('aria-label','Eliminar tarea'); x.innerHTML = '&times;';
+    tr.appendChild(celda('c-acc','', x));
+    return tr;
+  }
+
+  function autoAlto(ta){
+    ta.style.height = 'auto';
+    ta.style.height = (ta.scrollHeight + 2) + 'px';
+  }
+
+  function render(){
+    tbody.innerHTML = '';
+    var frag = document.createDocumentFragment();
+    var n = 0;
+    state.rows.forEach(function(r){
+      if (!visible(r)) return;
+      frag.appendChild(crearFila(r)); n++;
+    });
+    tbody.appendChild(frag);
+    tbody.querySelectorAll('textarea').forEach(autoAlto);
+    $('#vacio').textContent = state.rows.length ? 'No hay tareas con estos filtros.' : 'Todavía no hay tareas. Tocá "+ Nueva tarea" para empezar.';
+    $('#vacio').hidden = n > 0;
+    actualizarResumen();
+  }
+
+  function buscar(id){
+    for (var i=0;i<state.rows.length;i++) if (state.rows[i].id == id) return state.rows[i];
+    return null;
+  }
+
+  // Edición de campos
+  tbody.addEventListener('input', function(e){
+    var el = e.target, f = el.getAttribute('data-f');
+    if (!f) return;
+    var tr = el.closest('tr'), r = buscar(tr.getAttribute('data-id'));
+    if (!r) return;
+    r[f] = el.value;
+    if (el.tagName === 'TEXTAREA') autoAlto(el);
+    guardar();
+  });
+  tbody.addEventListener('change', function(e){
+    if (e.target.type === 'file'){
+      var lista = Array.prototype.slice.call(e.target.files);
+      var rf = buscar(e.target.closest('tr').getAttribute('data-id'));
+      e.target.value = '';
+      if (rf && lista.length) agregarFotos(rf, lista);
+      return;
+    }
+    var f = e.target.getAttribute('data-f');
+    if (f === 'rubro' || f === 'contratista' || f === 'ambiente' || f === 'ingresado') actualizarListas();
+    if (f === 'rubro' && filtro.rubro) render();
+  });
+
+  tbody.addEventListener('click', function(e){
+    var btn = e.target.closest('[data-act]');
+    if (!btn) return;
+    var tr = btn.closest('tr'), r = buscar(tr.getAttribute('data-id'));
+    if (!r) return;
+    if (btn.getAttribute('data-act') === 'toggle'){
+      r.ejecutado = r.ejecutado === 'SI' ? 'NO' : 'SI';
+      guardar(); render();
+    } else if (btn.getAttribute('data-act') === 'ver'){
+      abrirFoto(r, btn.getAttribute('data-foto'));
+    } else if (btn.getAttribute('data-act') === 'borrar'){
+      if (confirm('¿Eliminar la tarea "' + (r.tarea || 'sin título') + '"?')){
+        (r.fotos || []).forEach(quitarFotoDB);
+        state.rows = state.rows.filter(function(x){ return x.id !== r.id; });
+        guardar(); actualizarListas(); render();
+      }
+    }
+  });
+
+  // Encabezado editable
+  document.querySelectorAll('[data-meta]').forEach(function(i){
+    i.value = state.meta[i.getAttribute('data-meta')] || '';
+    i.addEventListener('input', function(){
+      state.meta[i.getAttribute('data-meta')] = i.value; guardar();
+    });
+  });
+
+  // Filtros
+  document.querySelectorAll('[data-estado]').forEach(function(b){
+    b.addEventListener('click', function(){
+      filtro.estado = b.getAttribute('data-estado');
+      document.querySelectorAll('[data-estado]').forEach(function(x){
+        x.setAttribute('aria-pressed', x === b ? 'true' : 'false');
+      });
+      render();
+    });
+  });
+  $('#f-rubro').addEventListener('change', function(e){ filtro.rubro = e.target.value; render(); });
+  $('#f-texto').addEventListener('input', function(e){ filtro.texto = e.target.value; render(); });
+
+  // Nueva tarea
+  $('#agregar').addEventListener('click', function(){
+    var base = state.rows.length ? state.rows[state.rows.length-1] : {};
+    var r = {
+      id: state.nextId || (state.rows.length + 1),
+      fecha: hoyISO(), tarea:'', piso: base.piso || '', unidad: base.unidad || '',
+      ambiente:'', ejecutado:'NO', rubro:'', contratista:'', ingresado: base.ingresado || ''
+    };
+    state.nextId = r.id + 1;
+    state.rows.push(r);
+    // Para que la nueva fila se vea, se limpian los filtros que la ocultarían
+    if (filtro.estado === 'SI') { filtro.estado = 'todas';
+      document.querySelectorAll('[data-estado]').forEach(function(x){
+        x.setAttribute('aria-pressed', x.getAttribute('data-estado')==='todas' ? 'true':'false');
+      });
+    }
+    filtro.rubro = ''; filtro.texto = ''; $('#f-texto').value = '';
+    guardar(); actualizarListas(); render();
+    var nueva = tbody.querySelector('tr[data-id="'+r.id+'"] textarea');
+    if (nueva){ nueva.focus(); nueva.scrollIntoView({block:'center', behavior:'smooth'}); }
+  });
+
+  // Exportar CSV (respeta los filtros activos)
+  function fechaAR(iso){
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||'');
+    return m ? (parseInt(m[3],10)+'/'+parseInt(m[2],10)+'/'+m[1]) : (iso||'');
+  }
+  function csvCelda(v){ v = String(v==null?'':v); return /[";\n\r]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
+  $('#csv').addEventListener('click', function(){
+    var cab = ['Fecha','Tarea','Piso','Unidad','Ambiente','Ejecutado','Rubro','Contratista','Ingresado'];
+    var lineas = [cab.join(';')];
+    state.rows.filter(visible).forEach(function(r){
+      lineas.push([fechaAR(r.fecha),r.tarea,r.piso,r.unidad,r.ambiente,r.ejecutado,r.rubro,r.contratista,r.ingresado].map(csvCelda).join(';'));
+    });
+    var blob = new Blob(['\ufeff'+lineas.join('\r\n')], {type:'text/csv;charset=utf-8'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'checklist-tareas-' + hoyISO() + '.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+  });
+
+  actualizarListas();
+  render();
+
+  // ---- Fotos por tarea (se guardan en IndexedDB, comprimidas) ----
+  var dbp;
+  try {
+    dbp = new Promise(function(res, rej){
+      var rq = indexedDB.open('3df-checklist-fotos', 1);
+      rq.onupgradeneeded = function(){ rq.result.createObjectStore('fotos', { keyPath:'id' }); };
+      rq.onsuccess = function(){ res(rq.result); };
+      rq.onerror = function(){ rej(rq.error); };
+    });
+  } catch(e){ dbp = Promise.reject(e); }
+  dbp.catch(function(){});
+
+  function dbOp(modo, fn){
+    return dbp.then(function(db){
+      return new Promise(function(res, rej){
+        var tx = db.transaction('fotos', modo), rq = fn(tx.objectStore('fotos'));
+        tx.oncomplete = function(){ res(rq && rq.result); };
+        tx.onerror = function(){ rej(tx.error); };
+      });
+    });
+  }
+  function quitarFotoDB(id){ delete photoCache[id]; dbOp('readwrite', function(s){ return s.delete(id); }).catch(function(){}); }
+
+  function comprimir(file){
+    return new Promise(function(res, rej){
+      var u = URL.createObjectURL(file), im = new Image();
+      im.onload = function(){
+        var s = Math.min(1, 1280 / Math.max(im.naturalWidth, im.naturalHeight));
+        var w = Math.round(im.naturalWidth * s), h = Math.round(im.naturalHeight * s);
+        var c = document.createElement('canvas'); c.width = w; c.height = h;
+        var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0,0,w,h); g.drawImage(im,0,0,w,h);
+        URL.revokeObjectURL(u);
+        res({ data: c.toDataURL('image/jpeg', 0.72), w: w, h: h });
+      };
+      im.onerror = function(){ URL.revokeObjectURL(u); rej(new Error('imagen')); };
+      im.src = u;
+    });
+  }
+
+  function agregarFotos(r, archivos){
+    r.fotos = r.fotos || [];
+    var p = Promise.resolve();
+    archivos.forEach(function(f){
+      p = p.then(function(){ return comprimir(f); }).then(function(c){
+        var id = 'f' + Date.now() + Math.random().toString(36).slice(2,7);
+        var rec = { id:id, data:c.data, w:c.w, h:c.h };
+        return dbOp('readwrite', function(s){ return s.put(rec); }).then(function(){
+          photoCache[id] = rec; r.fotos.push(id); guardar();
+        });
+      });
+    });
+    p.catch(function(){ alert('No se pudo guardar alguna foto en este dispositivo.'); }).then(render);
+  }
+
+  dbOp('readonly', function(s){ return s.getAll(); }).then(function(todas){
+    (todas || []).forEach(function(f){ photoCache[f.id] = f; });
+    render();
+  }).catch(function(){});
+
+  var visor = document.createElement('div');
+  visor.id = 'visor'; visor.hidden = true;
+  var visorImg = document.createElement('img'); visorImg.alt = 'Foto ampliada';
+  var visorBtns = document.createElement('div');
+  var bDel = document.createElement('button'); bDel.type = 'button'; bDel.className = 'btn'; bDel.textContent = 'Eliminar foto';
+  var bCer = document.createElement('button'); bCer.type = 'button'; bCer.className = 'btn'; bCer.textContent = 'Cerrar';
+  visorBtns.appendChild(bDel); visorBtns.appendChild(bCer);
+  visor.appendChild(visorImg); visor.appendChild(visorBtns);
+  document.body.appendChild(visor);
+  var actual = null;
+  function abrirFoto(r, id){
+    if (!photoCache[id]) return;
+    actual = { r:r, id:id }; visorImg.src = photoCache[id].data; visor.hidden = false;
+  }
+  function cerrarVisor(){ visor.hidden = true; visorImg.removeAttribute('src'); actual = null; }
+  bCer.addEventListener('click', cerrarVisor);
+  visor.addEventListener('click', function(e){ if (e.target === visor) cerrarVisor(); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && !visor.hidden) cerrarVisor(); });
+  bDel.addEventListener('click', function(){
+    if (!actual || !confirm('¿Eliminar esta foto?')) return;
+    actual.r.fotos = actual.r.fotos.filter(function(x){ return x !== actual.id; });
+    quitarFotoDB(actual.id); guardar(); cerrarVisor(); render();
+  });
+
+  // ---- Entregar archivo: menú de compartir en el celular, descarga en la compu ----
+  function entregar(blob, nombre, tipo, titulo){
+    var archivo = new File([blob], nombre, { type:tipo });
+    if (navigator.canShare && navigator.canShare({ files:[archivo] })) {
+      navigator.share({ files:[archivo], title:titulo })
+        .catch(function(err){ if (!err || err.name !== 'AbortError') descargarArchivo(blob, nombre); });
+    } else { descargarArchivo(blob, nombre); }
+  }
+
+  // ---- Exportar Excel (.xlsx con membrete, logo, colores y fotos) ----
+  $('#xls').addEventListener('click', function(){
+    var EJ = window.ExcelJS;
+    if (!EJ) { alert('No se pudo cargar el generador de Excel. Revisá la conexión a internet y probá de nuevo.'); return; }
+    var filas = state.rows.filter(visible);
+    if (!filas.length) { alert('No hay tareas para exportar con estos filtros.'); return; }
+
+    var NEGRO = { argb:'FF000000' }, BLANCO = { argb:'FFFFFFFF' };
+    var fino = { style:'thin', color:{ argb:'FF000000' } };
+    var bordes = { top:fino, left:fino, bottom:fino, right:fino };
+    var relleno = function(c){ return { type:'pattern', pattern:'solid', fgColor:c }; };
+    var wb = new EJ.Workbook(); wb.creator = '3dF Desarrollos';
+    var pagina = { paperSize:9, orientation:'landscape', fitToPage:true, fitToWidth:1, fitToHeight:0 };
+    var ws = wb.addWorksheet('Checklist', { views:[{ state:'frozen', ySplit:7 }], pageSetup:pagina });
+    ws.columns = [14,44,7,9,18,12,20,18,24,8].map(function(w){ return { width:w }; });
+
+    // Membrete negro
+    for (var rr = 1; rr <= 3; rr++) {
+      ws.getRow(rr).height = 20;
+      for (var cc = 1; cc <= 10; cc++) ws.getCell(rr, cc).fill = relleno(NEGRO);
+    }
+    function texto(rango, valor, fuente, alin){
+      ws.mergeCells(rango);
+      var c = ws.getCell(rango.split(':')[0]);
+      c.value = valor; c.font = fuente; c.alignment = alin; c.fill = relleno(NEGRO);
+    }
+    var izq = { vertical:'middle', horizontal:'left', indent:1 }, der = { vertical:'middle', horizontal:'right' };
+    var partes = [];
+    if (filtro.estado === 'SI') partes.push('Ejecutadas'); else if (filtro.estado === 'NO') partes.push('Pendientes');
+    if (filtro.rubro) partes.push('Rubro: ' + filtro.rubro);
+    if (filtro.texto) partes.push('Búsqueda: ' + filtro.texto);
+    texto('B1:G1', 'CHECKLIST TAREAS', { name:'Arial', size:18, bold:true, color:BLANCO }, izq);
+    texto('B2:G2', 'OBRA: ' + (state.meta.obra || ''), { name:'Arial', size:11, color:BLANCO }, izq);
+    texto('B3:G3', partes.length ? 'Filtros: ' + partes.join(' | ') : '', { name:'Arial', size:9, color:{ argb:'FFCCCCCC' } }, izq);
+    texto('H1:J1', String(state.meta.codigo || ''), { name:'Arial', size:9, bold:true, color:BLANCO }, der);
+    texto('H2:J2', 'VERSIÓN: ' + (state.meta.version || ''), { name:'Arial', size:9, color:BLANCO }, der);
+    texto('H3:J3', 'FECHA: ' + (state.meta.fecha || ''), { name:'Arial', size:9, color:BLANCO }, der);
+    if (logoPdf) {
+      var idLogo = wb.addImage({ base64: logoPdf.url, extension:'png' });
+      ws.addImage(idLogo, { tl:{ col:0.1, row:0.15 }, ext:{ width:90, height:Math.round(90 * logoPdf.h / logoPdf.w) } });
+    } else {
+      ws.getCell('A1').value = '3dF'; ws.getCell('A1').font = { name:'Arial', size:16, bold:true, color:BLANCO };
+    }
+
+    // Resumen
+    var hechas = filas.filter(function(r){ return r.ejecutado === 'SI'; }).length;
+    var pct = Math.round(hechas * 100 / filas.length);
+    ws.mergeCells('A5:J5'); ws.getRow(5).height = 22;
+    var res = ws.getCell('A5');
+    res.value = 'Tareas: ' + filas.length + '     Pendientes: ' + (filas.length - hechas) + '     Ejecutadas: ' + hechas + '     Avance: ' + pct + '%';
+    res.font = { name:'Arial', size:11, bold:true }; res.alignment = { vertical:'middle', horizontal:'left' };
+
+    // Tabla
+    var cab = ['Fecha','Tarea','Piso','Unidad','Ambiente','Ejecutado','Rubro','Contratista','Ingresado','Fotos'];
+    var centrados = { 1:1, 3:1, 4:1, 6:1, 10:1 };
+    ws.getRow(7).height = 22;
+    cab.forEach(function(t, i){
+      var c = ws.getCell(7, i + 1);
+      c.value = t; c.font = { name:'Arial', size:10, bold:true, color:BLANCO };
+      c.fill = relleno(NEGRO); c.border = bordes; c.alignment = { vertical:'middle', horizontal:'center' };
+    });
+    filas.forEach(function(r, i){
+      var n = 8 + i;
+      var vals = [fechaAR(r.fecha), r.tarea, r.piso, r.unidad, r.ambiente, r.ejecutado === 'SI' ? 'SÍ' : 'NO',
+                  r.rubro, r.contratista, r.ingresado, (r.fotos || []).length];
+      ws.getRow(n).height = Math.max(18, Math.ceil(String(r.tarea || '').length / 44) * 15 + 4);
+      vals.forEach(function(v, k){
+        var c = ws.getCell(n, k + 1);
+        c.value = v; c.border = bordes;
+        c.font = { name:'Arial', size:10 };
+        c.alignment = { vertical:'middle', wrapText:true, horizontal: centrados[k + 1] ? 'center' : 'left' };
+        if (i % 2) c.fill = relleno({ argb:'FFF0F0F0' });
+        if (k === 5) {
+          c.font = { name:'Arial', size:10, bold:true, color: r.ejecutado === 'SI' ? BLANCO : NEGRO };
+          if (r.ejecutado === 'SI') c.fill = relleno(NEGRO);
+        }
+      });
+    });
+    ws.autoFilter = { from:{ row:7, column:1 }, to:{ row:7 + filas.length, column:10 } };
+    ws.pageSetup.printTitlesRow = '7:7';
+
+    // Hoja de fotos
+    if ($('#pdf-fotos').checked) {
+      var conF = filas.filter(function(r){ return (r.fotos || []).some(function(id){ return photoCache[id]; }); });
+      if (conF.length) {
+        var w2 = wb.addWorksheet('Registro fotográfico', { pageSetup:pagina });
+        w2.columns = [{ width:46 }, { width:46 }, { width:46 }];
+        w2.mergeCells('A1:C1'); w2.getRow(1).height = 26;
+        var t2 = w2.getCell('A1');
+        t2.value = 'Registro fotográfico'; t2.font = { name:'Arial', size:14, bold:true, color:BLANCO };
+        t2.fill = relleno(NEGRO); t2.alignment = { vertical:'middle', horizontal:'left', indent:1 };
+        var fila = 3;
+        conF.forEach(function(r){
+          var ids = r.fotos.filter(function(id){ return photoCache[id]; });
+          w2.mergeCells('A' + fila + ':C' + fila);
+          var tt = w2.getCell('A' + fila);
+          tt.value = (r.tarea || 'Sin título') + '  (' + [r.piso && 'Piso ' + r.piso, r.unidad && 'Unidad ' + r.unidad, r.ambiente].filter(Boolean).join(' - ') + ')';
+          tt.font = { name:'Arial', size:10, bold:true }; tt.fill = relleno({ argb:'FFE6E6E6' });
+          tt.alignment = { vertical:'middle', wrapText:true };
+          fila++;
+          var col = 0;
+          ids.forEach(function(id){
+            var f = photoCache[id], s = Math.min(320 / f.w, 240 / f.h);
+            if (col === 3) { col = 0; fila += 13; }
+            var img = wb.addImage({ base64: f.data, extension:'jpeg' });
+            w2.addImage(img, { tl:{ col: col + 0.03, row: fila - 1 }, ext:{ width: Math.round(f.w * s), height: Math.round(f.h * s) } });
+            col++;
+          });
+          fila += 14;
+        });
+      }
+    }
+
+    var tipo = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    wb.xlsx.writeBuffer().then(function(buf){
+      entregar(new Blob([buf], { type:tipo }), 'checklist-tareas-' + hoyISO() + '.xlsx', tipo, 'Checklist de tareas - ' + (state.meta.obra || ''));
+    }).catch(function(){ alert('No se pudo generar el Excel. Probá de nuevo.'); });
+  });
+
+  // ---- Exportar PDF (se comparte directo a WhatsApp si el dispositivo lo permite) ----
+  var logoPdf = null;
+  (function(){
+    var im = new Image();
+    im.onload = function(){
+      try {
+        var c = document.createElement('canvas');
+        c.width = im.naturalWidth; c.height = im.naturalHeight;
+        c.getContext('2d').drawImage(im, 0, 0);
+        logoPdf = { url: c.toDataURL('image/png'), w: im.naturalWidth, h: im.naturalHeight };
+      } catch(e){}
+    };
+    im.src = 'logo.png';
+  })();
+
+  function descargarArchivo(blob, nombre){
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = nombre;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
+  }
+
+  $('#pdf').addEventListener('click', function(){
+    var lib = window.jspdf && window.jspdf.jsPDF;
+    if (!lib) { alert('No se pudo cargar el generador de PDF. Revisá la conexión a internet y probá de nuevo.'); return; }
+    var filas = state.rows.filter(visible);
+    if (!filas.length) { alert('No hay tareas para exportar con estos filtros.'); return; }
+
+    var doc = new lib({ orientation:'landscape', unit:'mm', format:'a4' });
+    if (typeof doc.autoTable !== 'function') { alert('No se pudo cargar el generador de tablas. Probá de nuevo.'); return; }
+    var W = doc.internal.pageSize.getWidth();
+    var M = 10;
+
+    // Banda negra con logo y datos del documento
+    doc.setFillColor(0,0,0); doc.rect(0,0,W,24,'F');
+    var x = M;
+    if (logoPdf) {
+      var alto = 16, ancho = alto * logoPdf.w / logoPdf.h;
+      doc.addImage(logoPdf.url, 'PNG', M, 4, ancho, alto);
+      x = M + ancho + 8;
+    } else {
+      doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(14);
+      doc.text('3dF DESARROLLOS', M, 14); x = M + 52;
+    }
+    doc.setTextColor(255,255,255);
+    doc.setFont('helvetica','bold'); doc.setFontSize(16);
+    doc.text('CHECKLIST TAREAS', x, 12);
+    doc.setFont('helvetica','normal'); doc.setFontSize(10);
+    doc.text('OBRA: ' + (state.meta.obra || ''), x, 19);
+    doc.setFontSize(8);
+    doc.text(String(state.meta.codigo || ''), W - M, 8, { align:'right' });
+    doc.text('VERSIÓN: ' + (state.meta.version || ''), W - M, 13, { align:'right' });
+    doc.text('FECHA: ' + (state.meta.fecha || ''), W - M, 18, { align:'right' });
+
+    // Resumen y filtros aplicados
+    var hechas = filas.filter(function(r){ return r.ejecutado === 'SI'; }).length;
+    var pct = Math.round(hechas * 100 / filas.length);
+    var partes = [];
+    if (filtro.estado === 'SI') partes.push('Ejecutadas');
+    else if (filtro.estado === 'NO') partes.push('Pendientes');
+    if (filtro.rubro) partes.push('Rubro: ' + filtro.rubro);
+    if (filtro.texto) partes.push('Búsqueda: ' + filtro.texto);
+    doc.setTextColor(0,0,0); doc.setFont('helvetica','bold'); doc.setFontSize(10);
+    doc.text('Tareas: ' + filas.length + '    Pendientes: ' + (filas.length - hechas) +
+             '    Ejecutadas: ' + hechas + '    Avance: ' + pct + '%', M, 32);
+    if (partes.length) {
+      doc.setFont('helvetica','normal'); doc.setFontSize(9);
+      doc.text('Filtros: ' + partes.join(' | '), W - M, 32, { align:'right' });
+    }
+
+    var cuerpo = filas.map(function(r){
+      return [fechaAR(r.fecha), r.tarea, r.piso, r.unidad, r.ambiente,
+              r.ejecutado === 'SI' ? 'SÍ' : 'NO', r.rubro, r.contratista, r.ingresado];
+    });
+
+    doc.autoTable({
+      startY: 36,
+      head: [['Fecha','Tarea','Piso','Unidad','Ambiente','Ejecutado','Rubro','Contratista','Ingresado']],
+      body: cuerpo,
+      margin: { left: M, right: M, bottom: 14 },
+      styles: { font:'helvetica', fontSize:8, cellPadding:2, lineColor:[0,0,0], lineWidth:0.2, textColor:[0,0,0], valign:'middle' },
+      headStyles: { fillColor:[0,0,0], textColor:[255,255,255], fontStyle:'bold' },
+      alternateRowStyles: { fillColor:[240,240,240] },
+      columnStyles: {
+        0:{ cellWidth:20 }, 2:{ cellWidth:12, halign:'center' }, 3:{ cellWidth:14, halign:'center' },
+        4:{ cellWidth:28 }, 5:{ cellWidth:20, halign:'center' }, 6:{ cellWidth:30 }, 7:{ cellWidth:28 }, 8:{ cellWidth:34 }
+      },
+      didParseCell: function(d){
+        if (d.section === 'body' && d.column.index === 5) {
+          if (d.cell.raw === 'SÍ') { d.cell.styles.fillColor = [0,0,0]; d.cell.styles.textColor = [255,255,255]; }
+          d.cell.styles.fontStyle = 'bold';
+        }
+      },
+      didDrawPage: function(){
+        var h = doc.internal.pageSize.getHeight();
+        doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(110,110,110);
+        doc.text('3dF Desarrollos - ' + (state.meta.obra || ''), M, h - 6);
+        doc.text('Página ' + doc.internal.getNumberOfPages(), W - M, h - 6, { align:'right' });
+      }
+    });
+
+    if ($('#pdf-fotos').checked) {
+      var conF = filas.filter(function(r){ return (r.fotos || []).some(function(id){ return photoCache[id]; }); });
+      if (conF.length) {
+        var H = doc.internal.pageSize.getHeight(), py, px, bw = 88, bh = 66, gap = 6;
+        doc.addPage(); py = M + 4;
+        doc.setTextColor(0,0,0); doc.setFont('helvetica','bold'); doc.setFontSize(13);
+        doc.text('Registro fotográfico', M, py); py += 8;
+        conF.forEach(function(r){
+          var ids = r.fotos.filter(function(id){ return photoCache[id]; });
+          var tit = (r.tarea || 'Sin título') + '  (' + [r.piso && 'Piso ' + r.piso, r.unidad && 'Unidad ' + r.unidad, r.ambiente].filter(Boolean).join(' - ') + ')';
+          if (py + 14 > H - 14) { doc.addPage(); py = M + 4; }
+          doc.setFont('helvetica','bold'); doc.setFontSize(10);
+          var ls = doc.splitTextToSize(tit, W - 2 * M); doc.text(ls, M, py); py += ls.length * 4.5 + 2;
+          px = M;
+          ids.forEach(function(id){
+            var f = photoCache[id], s = Math.min(bw / f.w, bh / f.h);
+            if (px + bw > W - M + 0.1) { px = M; py += bh + gap; }
+            if (py + bh > H - 14) { doc.addPage(); py = M + 4; px = M; }
+            doc.addImage(f.data, 'JPEG', px, py, f.w * s, f.h * s);
+            px += bw + gap;
+          });
+          py += bh + gap + 2;
+        });
+      }
+    }
+    var nombre = 'checklist-tareas-' + hoyISO() + '.pdf';
+    var blob = doc.output('blob');
+    var archivo = new File([blob], nombre, { type:'application/pdf' });
+    if (navigator.canShare && navigator.canShare({ files:[archivo] })) {
+      navigator.share({ files:[archivo], title:'Checklist de tareas - ' + (state.meta.obra || '') })
+        .catch(function(err){ if (!err || err.name !== 'AbortError') descargarArchivo(blob, nombre); });
+    } else {
+      descargarArchivo(blob, nombre);
+    }
+  });
+})();
+</script>
+</body>
+</html>
