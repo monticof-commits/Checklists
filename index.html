@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&display=swap" rel="stylesheet">
-<script async defer src="https://accounts.google.com/gsi/client"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
@@ -194,7 +194,6 @@ td input:focus,td textarea:focus{border-color:var(--negro);background:var(--blan
 .nube-acciones{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .nube-acciones .btn{flex:1}
 .nube-cerrar{position:absolute;right:12px;top:8px;border:0;background:transparent;font-size:30px;cursor:pointer}
-.nube-setup{border:2px solid #000;padding:10px 12px;color:#000}.nube-setup ol{margin:6px 0 6px 18px;padding:0}.nube-setup li{margin:3px 0}.nube-setup code{font-size:12px;background:#f0f0f0;padding:0 3px;word-break:break-all}#nube-carpeta{color:#000;font-weight:700}
 .nube-mensaje{min-height:20px;font-size:13px;font-weight:600;margin:12px 0 0}
 @media(max-width:520px){.nube-panel{padding:22px 18px}.nube-acciones .btn{flex-basis:100%}}
 
@@ -268,36 +267,29 @@ td input:focus,td textarea:focus{border-color:var(--negro);background:var(--blan
     <div class="vacio" id="vacio" hidden>No hay tareas con estos filtros.</div>
   </div>
 
-  <p class="pie">Los cambios se guardan automáticamente en este dispositivo. Iniciá sesión con Google en Cuenta / sincronización para guardarlos también en tu Google Drive.</p>
+  <p class="pie">Los cambios se guardan automáticamente en este dispositivo. Iniciá sesión en Cuenta / sincronización para mantener tus equipos actualizados.</p>
 </main>
 
 
 <div id="nube-modal" class="nube-modal" hidden>
   <section class="nube-panel" role="dialog" aria-modal="true" aria-labelledby="nube-titulo">
     <button type="button" id="nube-cerrar" class="nube-cerrar" aria-label="Cerrar">×</button>
-    <h2 id="nube-titulo">Google Drive</h2>
-    <p class="nube-desc">Iniciá sesión con tu cuenta de Google para guardar tu checklist en un Excel (<b>checklist.xlsx</b>) y sus fotos en la carpeta <b>3dF Checklist</b> de tu Google Drive. Seguís editando en la app, también sin conexión; los cambios se suben al sincronizar y lo que se edite en el Excel se trae a la app.</p>
-    <div id="nube-setup" class="nube-desc nube-setup" hidden>
-      <b>Falta configurar el acceso a Google (una sola vez, gratis):</b>
-      <ol>
-        <li>En <b>console.cloud.google.com</b> creá un proyecto y habilitá <b>Google Drive API</b>.</li>
-        <li>En <b>Pantalla de consentimiento OAuth</b> elegí <b>Externo</b>, modo prueba, y agregá los correos de los usuarios.</li>
-        <li>En <b>Credenciales</b> creá un <b>ID de cliente OAuth</b> tipo <b>Aplicación web</b> con orígenes JavaScript autorizados: <code>http://localhost:8765</code> y la URL de GitHub Pages.</li>
-        <li>Permiso usado: <code>drive.file</code> (la app solo ve los archivos que ella crea).</li>
-        <li>Pegá el ID en <code>var GOOGLE_CLIENT_ID = '998929723356-hdjao8aaqovh9ki23tdq3g7ofuf0hq48.apps.googleusercontent.com';</code> dentro de <code>index.html</code>.</li>
-      </ol>
-      Ver <code>SETUP-GOOGLE.md</code>.
-    </div>
+    <h2 id="nube-titulo">Tu cuenta 3dF</h2>
+    <p class="nube-desc">Iniciá sesión para sincronizar tu checklist y sus fotos entre tus dispositivos. También podés seguir trabajando sin conexión.</p>
+    <label for="nube-email">Correo electrónico</label>
+    <input id="nube-email" type="email" autocomplete="email" placeholder="tu correo" />
+    <label for="nube-password">Contraseña</label>
+    <input id="nube-password" type="password" autocomplete="current-password" placeholder="Contraseña" />
     <div class="nube-acciones">
-      <button type="button" class="btn primario" id="nube-login">Iniciar sesión con Google</button>
+      <button type="button" class="btn primario" id="nube-login">Iniciar sesión</button>
+      <button type="button" class="btn" id="nube-registro">Crear cuenta</button>
     </div>
     <div class="nube-acciones">
       <button type="button" class="btn" id="nube-sync">Sincronizar ahora</button>
       <button type="button" class="btn" id="nube-salir">Cerrar sesión</button>
     </div>
-    <p class="nube-desc"><a id="nube-carpeta" href="#" target="_blank" rel="noopener" hidden>Abrir carpeta 3dF Checklist en Google Drive</a></p>
     <p id="nube-mensaje" class="nube-mensaje" aria-live="polite"></p>
-    <p class="nube-nota">Cada persona usa su propia cuenta de Google: su Excel y sus fotos quedan solo en su Drive.</p>
+    <p class="nube-nota">La cuenta es personal. Tus datos quedan aislados mediante políticas de seguridad en Supabase.</p>
   </section>
 </div>
 
@@ -1117,158 +1109,40 @@ td input:focus,td textarea:focus{border-color:var(--negro);background:var(--blan
     }
   });
 
-  // ---- Cuenta Google y sincronización local-first con Google Drive ----
-  // Pegá acá el "ID de cliente" OAuth (tipo "Aplicación web") de tu proyecto de Google Cloud.
-  // No es un secreto: es un identificador público. Ver SETUP-GOOGLE.md.
-  var GOOGLE_CLIENT_ID = '998929723356-hdjao8aaqovh9ki23tdq3g7ofuf0hq48.apps.googleusercontent.com';
-  var DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
-  var CARPETA = '3dF Checklist', ARCHIVO = 'checklist.xlsx', CARPETA_FOTOS = 'fotos';
-  var FOLDER_MIME = 'application/vnd.google-apps.folder';
-  var XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-  var DRIVE = 'https://www.googleapis.com/drive/v3/files';
-  var UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files';
-  var LS = { change:'3df-checklist-local-change', sync:'3df-checklist-last-sync', remote:'3df-gdrive-remote-modified',
-             ids:'3df-gdrive-ids', fotos:'3df-gdrive-fotos', linked:'3df-gdrive-vinculado', token:'3df-gdrive-token' };
-  function lsGet(k, def){ try { var v = localStorage.getItem(k); return v == null ? def : JSON.parse(v); } catch(e){ return def; } }
-  function lsSet(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
-
-  var accessToken = null, tokenExp = 0, cloudUser = null, syncTimer = null, syncing = false;
-  var lastLocalChange = Number(lsGet(LS.change, 0)) || 0;
-  var lastCloudSync = Number(lsGet(LS.sync, 0)) || 0;
-  var lastRemoteModified = lsGet(LS.remote, '') || '';
-  var driveIds = lsGet(LS.ids, {}) || {};   // { email, folder, fotos, file }
-  var fotoMap = lsGet(LS.fotos, {}) || {};  // id de foto local -> id de archivo en Drive
-  try { var tk = JSON.parse(sessionStorage.getItem(LS.token) || 'null'); if (tk && tk.e > Date.now()) { accessToken = tk.t; tokenExp = tk.e; } } catch(e){}
+  // ---- Cuenta personal y sincronización local-first con Supabase ----
+  // La publishable key es pública; la seguridad real se aplica con Auth + RLS.
+  var SUPABASE_URL = 'https://zrlxmikeawltjfvbxszr.supabase.co';
+  var SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_0y66BHj98E17LiYTqBqgFg_jXWWM2uf';
+  var CLOUD_TABLE = 'checklist_documents';
+  var CLOUD_BUCKET = 'checklist-photos';
+  var cloudClient = null, cloudUser = null, syncTimer = null, syncing = false;
+  var lastLocalChange = Number(localStorage.getItem('3df-checklist-local-change') || 0);
+  var lastCloudSync = Number(localStorage.getItem('3df-checklist-last-sync') || 0);
+  var uploadedPhotos = {};
 
   var nubeModal = document.getElementById('nube-modal');
   var nubeEstado = document.getElementById('estado-nube');
   var nubeMensaje = document.getElementById('nube-mensaje');
-  var nubeSetup = document.getElementById('nube-setup');
-  var nubeCarpeta = document.getElementById('nube-carpeta');
   function mensajeNube(s){ if (nubeMensaje) nubeMensaje.textContent = s || ''; }
   function estadoNube(s){ if (nubeEstado) nubeEstado.textContent = s; }
-  function linkCarpeta(){
-    if (driveIds.folder && cloudUser) { nubeCarpeta.href = 'https://drive.google.com/drive/folders/' + driveIds.folder; nubeCarpeta.hidden = false; }
-    else nubeCarpeta.hidden = true;
-  }
-  function abrirNube(){
-    nubeModal.hidden = false;
-    nubeSetup.hidden = !!GOOGLE_CLIENT_ID;
-    linkCarpeta();
-    if (!GOOGLE_CLIENT_ID) mensajeNube('La sincronización con Google Drive todavía no está configurada. La app funciona igual en este dispositivo.');
-    else if (cloudUser) mensajeNube('Sesión iniciada: ' + cloudUser.email);
-    else if (lsGet(LS.linked, false)) mensajeNube('Tocá "Sincronizar ahora" para reconectar con Google Drive.');
-    else mensajeNube('Iniciá sesión con tu cuenta de Google.');
-  }
+  function abrirNube(){ nubeModal.hidden = false; mensajeNube(cloudUser ? ('Sesión iniciada: ' + cloudUser.email) : 'Ingresá con tu correo y contraseña.'); }
   function cerrarNube(){ nubeModal.hidden = true; }
   document.getElementById('cuenta-nube').addEventListener('click', abrirNube);
   document.getElementById('nube-cerrar').addEventListener('click', cerrarNube);
   nubeModal.addEventListener('click', function(e){ if (e.target === nubeModal) cerrarNube(); });
 
-  // --- Google Identity Services (token de acceso para Drive) ---
-  function asegurarGIS(){
-    return new Promise(function(res, rej){
-      var n = 0;
-      (function esperar(){
-        if (window.google && google.accounts && google.accounts.oauth2) return res();
-        if (++n > 40) return rej(new Error('No se pudo cargar el inicio de sesión de Google. Revisá la conexión.'));
-        setTimeout(esperar, 200);
-      })();
+  if (window.supabase && window.supabase.createClient) {
+    cloudClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:true }
     });
-  }
-  function pedirToken(prompt){
-    return asegurarGIS().then(function(){
-      return new Promise(function(res, rej){
-        var cliente = google.accounts.oauth2.initTokenClient({
-          client_id: GOOGLE_CLIENT_ID, scope: DRIVE_SCOPE,
-          callback: function(r){
-            if (!r || r.error) return rej(new Error((r && (r.error_description || r.error)) || 'Google no dio acceso.'));
-            accessToken = r.access_token; tokenExp = Date.now() + ((Number(r.expires_in) || 3600) * 1000) - 60000;
-            try { sessionStorage.setItem(LS.token, JSON.stringify({ t:accessToken, e:tokenExp })); } catch(e){}
-            lsSet(LS.linked, true);
-            res(accessToken);
-          },
-          error_callback: function(e){
-            rej(new Error(e && e.type === 'popup_closed' ? 'Se cerró la ventana de Google sin iniciar sesión.' : 'No se pudo abrir la ventana de Google (¿bloqueador de ventanas emergentes?).'));
-          }
-        });
-        var op = { prompt: prompt };
-        if (driveIds.email && prompt !== 'select_account') op.hint = driveIds.email;
-        cliente.requestAccessToken(op);
-      });
-    });
-  }
-  function tokenValido(){ return !!accessToken && Date.now() < tokenExp; }
-  function errAuth(){ var e = new Error('La sesión de Google venció. Tocá "Sincronizar ahora" para reconectar.'); e.auth = true; return e; }
-
-  // --- Drive REST v3 ---
-  function api(url, opts){
-    opts = opts || {}; opts.headers = opts.headers || {};
-    opts.headers.Authorization = 'Bearer ' + accessToken;
-    return fetch(url, opts).then(function(r){
-      if (r.status === 401) { accessToken = null; tokenExp = 0; try { sessionStorage.removeItem(LS.token); } catch(e){} throw errAuth(); }
-      if (!r.ok) return r.text().then(function(t){ var e = new Error('Google Drive respondió ' + r.status + ': ' + t.slice(0, 160)); e.status = r.status; throw e; });
-      return r;
-    });
-  }
-  function json(r){ return r.json(); }
-  function comillas(s){ return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
-  function buscarArchivo(nombre, padre, mime){
-    var q = "name='" + comillas(nombre) + "' and trashed=false and '" + padre + "' in parents" + (mime ? " and mimeType='" + mime + "'" : '');
-    return api(DRIVE + '?spaces=drive&pageSize=10&orderBy=modifiedTime desc&q=' + encodeURIComponent(q) + '&fields=' + encodeURIComponent('files(id,name,modifiedTime)'))
-      .then(json).then(function(j){ return (j.files || [])[0] || null; });
-  }
-  function crearCarpeta(nombre, padre){
-    return api(DRIVE + '?fields=id', { method:'POST', headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify({ name:nombre, mimeType:FOLDER_MIME, parents:[padre] }) }).then(json).then(function(j){ return j.id; });
-  }
-  function infoArchivo(id){
-    if (!id) return Promise.resolve(null);
-    return api(DRIVE + '/' + id + '?fields=id,modifiedTime,trashed').then(json)
-      .then(function(j){ return j.trashed ? null : j; })
-      .catch(function(e){ if (e.auth) throw e; return null; });
-  }
-  function carpetaHija(idGuardado, nombre, padre){
-    return infoArchivo(idGuardado).then(function(f){
-      if (f) return f.id;
-      return buscarArchivo(nombre, padre, FOLDER_MIME).then(function(x){ return x ? x.id : crearCarpeta(nombre, padre); });
-    });
-  }
-  function asegurarCarpetas(){
-    var fotosAntes = driveIds.fotos;
-    return carpetaHija(driveIds.folder, CARPETA, 'root').then(function(id){
-      if (id !== driveIds.folder) { driveIds.file = null; driveIds.fotos = null; }
-      driveIds.folder = id;
-      return carpetaHija(driveIds.fotos, CARPETA_FOTOS, id);
-    }).then(function(fid){
-      if (fotosAntes && fid !== fotosAntes) { fotoMap = {}; lsSet(LS.fotos, fotoMap); }
-      driveIds.fotos = fid; lsSet(LS.ids, driveIds);
-    });
-  }
-  function archivoRemoto(){
-    return infoArchivo(driveIds.file).then(function(f){ return f || buscarArchivo(ARCHIVO, driveIds.folder); })
-      .then(function(f){ driveIds.file = f ? f.id : null; lsSet(LS.ids, driveIds); return f; });
-  }
-  function subirMultipart(meta, blob){
-    var fd = new FormData();
-    fd.append('metadata', new Blob([JSON.stringify(meta)], { type:'application/json' }));
-    fd.append('file', blob);
-    return api(UPLOAD + '?uploadType=multipart&fields=id,modifiedTime', { method:'POST', body:fd }).then(json);
-  }
-  function cargarUsuario(){
-    return api('https://www.googleapis.com/drive/v3/about?fields=' + encodeURIComponent('user(emailAddress,displayName)')).then(json).then(function(j){
-      var email = (j.user && j.user.emailAddress) || '';
-      if (driveIds.email && email && driveIds.email !== email) {
-        // Otra cuenta de Google en este dispositivo: empezar la vinculación de cero.
-        driveIds = {}; fotoMap = {}; lastCloudSync = 0; lastRemoteModified = '';
-        lsSet(LS.fotos, fotoMap); lsSet(LS.sync, 0); lsSet(LS.remote, '');
-      }
-      driveIds.email = email; lsSet(LS.ids, driveIds);
-      cloudUser = { email: email, nombre: (j.user && j.user.displayName) || '' };
-    });
+  } else {
+    estadoNube('Librería de conexión no disponible');
   }
 
-  // --- Utilidades de datos y fotos ---
+  function datosLocales(){
+    var copy = JSON.parse(JSON.stringify({ meta:state.meta, tabs:state.tabs, activa:state.activa }));
+    return copy;
+  }
   function filasDeTodasLasPestanas(){
     var out = [];
     (state.tabs || []).forEach(function(t){ (t.rows || []).forEach(function(r){ out.push(r); }); });
@@ -1277,276 +1151,205 @@ td input:focus,td textarea:focus{border-color:var(--negro);background:var(--blan
   function idsFotos(){
     var seen = {}, out = [];
     filasDeTodasLasPestanas().forEach(function(r){
-      (r.fotos || []).forEach(function(id){ if (!seen[id]) { seen[id] = true; out.push(id); } });
+      (r.fotos || []).forEach(function(id){ if (!seen[id]) { seen[id]=true; out.push(id); } });
     });
     return out;
   }
   function dataUrlBlob(dataUrl){
     var parts = dataUrl.split(',');
-    var mime = (parts[0].match(/:(.*?);/) || [, 'image/jpeg'])[1];
+    var mime = (parts[0].match(/:(.*?);/) || [,'image/jpeg'])[1];
     var binary = atob(parts[1]), len = binary.length, bytes = new Uint8Array(len);
-    for (var i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
-    return new Blob([bytes], { type:mime });
+    for (var i=0;i<len;i++) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], {type:mime});
   }
   function blobDataUrl(blob){
-    return new Promise(function(resolve, reject){
-      var fr = new FileReader(); fr.onload = function(){ resolve(fr.result); }; fr.onerror = reject; fr.readAsDataURL(blob);
+    return new Promise(function(resolve,reject){
+      var fr = new FileReader(); fr.onload = function(){resolve(fr.result);}; fr.onerror = reject; fr.readAsDataURL(blob);
     });
   }
   function dimensiones(dataUrl){
     return new Promise(function(resolve){
       var im = new Image();
-      im.onload = function(){ resolve({ w:im.naturalWidth || 800, h:im.naturalHeight || 600 }); };
-      im.onerror = function(){ resolve({ w:800, h:600 }); };
+      im.onload = function(){ resolve({w:im.naturalWidth||800,h:im.naturalHeight||600}); };
+      im.onerror = function(){ resolve({w:800,h:600}); };
       im.src = dataUrl;
     });
   }
+  function cargarFotoRemota(id){
+    if (photoCache[id]) return Promise.resolve();
+    var path = cloudUser.id + '/' + id + '.jpg';
+    return cloudClient.storage.from(CLOUD_BUCKET).download(path).then(function(res){
+      if (res.error) throw res.error;
+      return blobDataUrl(res.data);
+    }).then(function(data){
+      return dimensiones(data).then(function(d){
+        var rec = {id:id,data:data,w:d.w,h:d.h};
+        return dbOp('readwrite', function(s){ return s.put(rec); }).then(function(){
+          photoCache[id] = rec;
+        });
+      });
+    });
+  }
   function subirFotos(){
-    return idsFotos().reduce(function(p, id){
+    var ids = idsFotos();
+    return ids.reduce(function(p,id){
       return p.then(function(){
         var f = photoCache[id];
-        if (!f || fotoMap[id]) return;
-        return subirMultipart({ name:id + '.jpg', mimeType:'image/jpeg', parents:[driveIds.fotos] }, dataUrlBlob(f.data))
-          .then(function(j){ fotoMap[id] = j.id; lsSet(LS.fotos, fotoMap); });
+        if (!f || uploadedPhotos[id]) return;
+        var path = cloudUser.id + '/' + id + '.jpg';
+        return cloudClient.storage.from(CLOUD_BUCKET).upload(path, dataUrlBlob(f.data), {
+          contentType:'image/jpeg', upsert:true
+        }).then(function(res){
+          if (res.error) throw res.error;
+          uploadedPhotos[id] = true;
+        });
       });
     }, Promise.resolve());
   }
-  function bajarFoto(idLocal, idDrive){
-    return api(DRIVE + '/' + idDrive + '?alt=media').then(function(r){ return r.blob(); }).then(blobDataUrl).then(function(data){
-      return dimensiones(data).then(function(d){
-        var rec = { id:idLocal, data:data, w:d.w, h:d.h };
-        return dbOp('readwrite', function(s){ return s.put(rec); }).then(function(){ photoCache[idLocal] = rec; });
-      });
-    });
+  function guardarDocumentoNube(){
+    var payload = datosLocales();
+    return cloudClient.from(CLOUD_TABLE).upsert({
+      user_id:cloudUser.id, data:payload, updated_at:new Date().toISOString()
+    }, {onConflict:'user_id'});
   }
-
-  // --- Excel ↔ estado ---
-  var COLS = ['id','tab','Pestaña','Fecha','Tarea','Piso','Unidad','Ambiente','Ejecutado','Rubro','Contratista','Ingresado','FotosIds'];
-  var ANCHOS = [7,6,16,12,44,7,9,18,11,20,18,24,40];
-  function construirExcel(){
-    var EJ = window.ExcelJS;
-    if (!EJ) return Promise.reject(new Error('No se pudo cargar el generador de Excel.'));
-    sincronizar();
-    var NEGRO = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF000000' } };
-    var wb = new EJ.Workbook(); wb.creator = '3dF Desarrollos';
-    var ws = wb.addWorksheet('Tareas', { views:[{ state:'frozen', ySplit:1 }] });
-    ws.columns = COLS.map(function(c, i){ return { header:c, key:c, width:ANCHOS[i] }; });
-    state.tabs.forEach(function(t){
-      (t.rows || []).forEach(function(r){
-        ws.addRow([r.id, t.id, t.nombre, r.fecha || '', r.tarea || '', r.piso || '', r.unidad || '', r.ambiente || '',
-                   r.ejecutado === 'SI' ? 'SI' : 'NO', r.rubro || '', r.contratista || '', r.ingresado || '',
-                   (r.fotos || []).map(function(id){ return fotoMap[id]; }).filter(Boolean).join(',')]);
-      });
-    });
-    ws.getRow(1).eachCell(function(c){ c.font = { name:'Arial', bold:true, color:{ argb:'FFFFFFFF' } }; c.fill = NEGRO; });
-    ws.autoFilter = { from:{ row:1, column:1 }, to:{ row:1, column:COLS.length } };
-    var wc = wb.addWorksheet('Config');
-    wc.columns = [{ header:'clave', width:16 }, { header:'valor', width:30 }, { header:'nombre', width:24 }, { header:'nextId', width:8 }];
-    ['obra','codigo','version','fecha'].forEach(function(k){ wc.addRow(['meta.' + k, state.meta[k] || '']); });
-    wc.addRow(['activa', state.activa]);
-    state.tabs.forEach(function(t){ wc.addRow(['tab', t.id, t.nombre, t.nextId || 1]); });
-    wc.getRow(1).eachCell(function(c){ c.font = { name:'Arial', bold:true, color:{ argb:'FFFFFFFF' } }; c.fill = NEGRO; });
-    return wb.xlsx.writeBuffer().then(function(buf){ return new Blob([buf], { type:XLSX_MIME }); });
-  }
-  function pad2(n){ return String(n).padStart(2, '0'); }
-  function valorCelda(c){
-    var v = c ? c.value : null;
-    if (v == null) return '';
-    if (v instanceof Date) return v.toISOString().slice(0, 10);
-    if (typeof v === 'object') {
-      if (v.richText) return v.richText.map(function(x){ return x.text; }).join('').trim();
-      if (v.text != null) return String(v.text).trim();
-      if (v.result != null) return v.result instanceof Date ? v.result.toISOString().slice(0, 10) : String(v.result).trim();
-      return '';
+  function aplicarDocumentoRemoto(doc){
+    syncing = true;
+    state = doc && doc.data ? doc.data : state;
+    if (!state.meta) state.meta = JSON.parse(JSON.stringify(INICIAL.meta));
+    if (!Array.isArray(state.tabs) || !state.tabs.length) {
+      state.tabs = [{id:1,nombre:'General',rows:state.rows||[],nextId:state.nextId||1}];
+      state.activa = 1;
     }
-    return String(v).trim();
-  }
-  function aFechaISO(s){
-    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-    var m = /^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/.exec(s);
-    return m ? (m[3] + '-' + pad2(m[2]) + '-' + pad2(m[1])) : s;
-  }
-  function leerExcel(buf){
-    var wb = new window.ExcelJS.Workbook();
-    return wb.xlsx.load(buf).then(function(){
-      var ws = wb.getWorksheet('Tareas') || wb.worksheets[0];
-      if (!ws) throw new Error('El Excel de Drive no tiene hojas.');
-      var col = {};
-      ws.getRow(1).eachCell(function(c, n){ col[norm(valorCelda(c))] = n; });
-      if (!col[norm('Tarea')]) throw new Error('El Excel de Drive no tiene la columna "Tarea" en la fila 1.');
-      function get(row, nombre){ var n = col[norm(nombre)]; return n ? valorCelda(row.getCell(n)) : ''; }
-
-      var meta = JSON.parse(JSON.stringify(state.meta || {})), tabs = [], porId = {}, porNombre = {}, activa = null;
-      var wc = wb.getWorksheet('Config');
-      if (wc) wc.eachRow(function(row, i){
-        if (i === 1) return;
-        var k = valorCelda(row.getCell(1)), v = valorCelda(row.getCell(2));
-        if (k.indexOf('meta.') === 0) meta[k.slice(5)] = v;
-        else if (k === 'activa') activa = Number(v);
-        else if (k === 'tab' && Number(v) && !porId[Number(v)]) {
-          var t = { id:Number(v), nombre:(valorCelda(row.getCell(3)) || 'Pestaña').slice(0, 30), rows:[], nextId:Number(valorCelda(row.getCell(4))) || 1 };
-          tabs.push(t); porId[t.id] = t; porNombre[norm(t.nombre)] = t;
-        }
-      });
-      function tabPara(id, nombre){
-        var t = (id && porId[id]) || (nombre && porNombre[norm(nombre)]);
-        if (t) return t;
-        var nid = (id && !porId[id]) ? id : tabs.reduce(function(m, x){ return Math.max(m, x.id); }, 0) + 1;
-        t = { id:nid, nombre:(nombre || 'General').slice(0, 30), rows:[], nextId:1 };
-        tabs.push(t); porId[nid] = t; porNombre[norm(t.nombre)] = t;
-        return t;
-      }
-      ws.eachRow(function(row, i){
-        if (i === 1) return;
-        var r = {
-          fecha: aFechaISO(get(row, 'Fecha')), tarea: get(row, 'Tarea'), piso: get(row, 'Piso'), unidad: get(row, 'Unidad'),
-          ambiente: get(row, 'Ambiente'), ejecutado: /^(si|s|x|true|1|ok|hecho|ejecutado)$/.test(norm(get(row, 'Ejecutado'))) ? 'SI' : 'NO',
-          rubro: get(row, 'Rubro'), contratista: get(row, 'Contratista'), ingresado: get(row, 'Ingresado')
-        };
-        var fotos = get(row, 'FotosIds').split(/[,;\s]+/).filter(Boolean);
-        if (!r.tarea && !r.piso && !r.unidad && !r.ambiente && !r.rubro && !r.contratista && !fotos.length) return;
-        var t = tabPara(Number(get(row, 'tab')) || 0, get(row, 'Pestaña'));
-        var id = Number(get(row, 'id')) || 0;
-        if (t.rows.some(function(x){ return x.id === id; })) id = 0;
-        r.id = id; r.fotosDrive = fotos;
-        t.rows.push(r);
-      });
-      if (!tabs.length) tabPara(1, 'General');
-      tabs.forEach(function(t){
-        var max = t.rows.reduce(function(m, r){ return Math.max(m, r.id || 0); }, 0);
-        t.rows.forEach(function(r){ if (!r.id) r.id = ++max; });
-        t.nextId = Math.max(t.nextId || 1, max + 1);
-      });
-      if (!porId[activa]) activa = porId[state.activa] ? state.activa : tabs[0].id;
-      return { meta:meta, tabs:tabs, activa:activa };
-    });
-  }
-  function aplicarRemoto(doc){
-    var inv = {}, bajar = [];
-    Object.keys(fotoMap).forEach(function(k){ inv[fotoMap[k]] = k; });
-    doc.tabs.forEach(function(t){
-      t.rows.forEach(function(r){
-        r.fotos = (r.fotosDrive || []).map(function(d){
-          var l = inv[d];
-          if (!l) { l = 'g' + d; fotoMap[l] = d; inv[d] = l; }
-          if (!photoCache[l]) bajar.push([l, d]);
-          return l;
-        });
-        delete r.fotosDrive;
-      });
-    });
-    lsSet(LS.fotos, fotoMap);
-    state.meta = doc.meta; state.tabs = doc.tabs; state.activa = doc.activa;
-    var t = tabActiva(); state.activa = t.id; state.rows = t.rows; state.nextId = t.nextId;
-    try { localStorage.setItem(KEY, JSON.stringify({ meta:state.meta, tabs:state.tabs, activa:state.activa })); } catch(e){}
+    if (!state.tabs.some(function(t){return t.id===state.activa;})) state.activa = state.tabs[0].id;
+    var t = tabActiva(); state.rows = t.rows || []; state.nextId = t.nextId || 1;
+    try { localStorage.setItem(KEY, JSON.stringify({meta:state.meta,tabs:state.tabs,activa:state.activa})); } catch(e){}
     document.querySelectorAll('[data-meta]').forEach(function(i){ i.value = state.meta[i.getAttribute('data-meta')] || ''; });
     actualizarListas(); renderTabs(); render();
-    return bajar.reduce(function(p, x){
-      return p.then(function(){ return bajarFoto(x[0], x[1]).catch(function(e){ if (e.auth) throw e; console.warn('Foto no disponible en Drive:', x[1], e); }); });
-    }, Promise.resolve()).then(render);
+    var ids = idsFotos();
+    return ids.reduce(function(p,id){ return p.then(function(){ return cargarFotoRemota(id).catch(function(){ /* foto aún no subida o ausente */ }); }); }, Promise.resolve())
+      .then(function(){ render(); syncing = false; });
   }
   function localTieneDatos(){
     return (state.tabs || []).some(function(t){ return (t.rows || []).length > 0; });
   }
-
-  // --- Sincronización ---
-  function sincronizarAhora(interactivo){
-    if (interactivo && interactivo.type) interactivo = true; // llamado desde un botón
-    if (!GOOGLE_CLIENT_ID) { abrirNube(); return Promise.resolve(); }
+  function sincronizarAhora(){
+    if (!cloudClient || !cloudUser) { abrirNube(); mensajeNube('Primero iniciá sesión para sincronizar.'); return Promise.resolve(); }
     if (!navigator.onLine) { estadoNube('Sin conexión · cambios guardados localmente'); mensajeNube('Estás sin conexión. Los cambios se sincronizarán cuando vuelva internet.'); return Promise.resolve(); }
     if (syncing) return Promise.resolve();
-    if (!tokenValido() && !interactivo) {
-      cloudUser = null;
-      estadoNube(lsGet(LS.linked, false) ? 'Google Drive: tocá Sincronizar para reconectar' : 'Solo en este dispositivo');
-      return Promise.resolve();
-    }
-    var inicio = Date.now();
-    var acceso = tokenValido() ? Promise.resolve() : pedirToken(lsGet(LS.linked, false) ? '' : 'consent');
-    return acceso.then(function(){
-      syncing = true; estadoNube('Sincronizando…'); mensajeNube('Sincronizando Excel y fotos con Google Drive…');
-      return cargarUsuario();
-    }).then(function(){
-      return dbOp('readonly', function(s){ return s.getAll(); }).then(function(all){ (all || []).forEach(function(f){ photoCache[f.id] = f; }); }).catch(function(){});
-    }).then(asegurarCarpetas).then(archivoRemoto).then(function(remoto){
-      function subir(){
-        return subirFotos().then(construirExcel).then(function(blob){
-          if (remoto) return api(UPLOAD + '/' + remoto.id + '?uploadType=media&fields=id,modifiedTime', { method:'PATCH', headers:{ 'Content-Type':XLSX_MIME }, body:blob }).then(json);
-          return subirMultipart({ name:ARCHIVO, mimeType:XLSX_MIME, parents:[driveIds.folder] }, blob);
-        }).then(function(j){ driveIds.file = j.id; lsSet(LS.ids, driveIds); lastRemoteModified = j.modifiedTime; });
-      }
-      function bajar(){
-        return api(DRIVE + '/' + remoto.id + '?alt=media').then(function(r){ return r.arrayBuffer(); })
-          .then(leerExcel).then(aplicarRemoto).then(function(){ lastRemoteModified = remoto.modifiedTime; });
-      }
-      if (!remoto) return subir();
-      var remotoCambio = remoto.modifiedTime !== lastRemoteModified;
-      var localCambio = lastLocalChange > lastCloudSync;
-      // Primera vinculación: no pisar en silencio datos locales preexistentes.
-      if (!lastCloudSync) {
-        if (localTieneDatos() && confirm('Tu Google Drive ya tiene un checklist.xlsx y este dispositivo también tiene tareas guardadas. ¿Querés subir y conservar los datos de este dispositivo? Aceptar = subir este dispositivo. Cancelar = descargar el Excel de Drive.')) return subir();
-        return bajar();
-      }
-      if (localCambio && remotoCambio) {
-        if (confirm('Hay cambios en este dispositivo y también en el Excel de Google Drive. ¿Querés conservar este dispositivo y subir sus cambios? Aceptar = subir este dispositivo. Cancelar = descargar el Excel de Drive.')) return subir();
-        return bajar();
-      }
-      if (localCambio) return subir();
-      if (remotoCambio) return bajar();
-    }).then(function(){
-      lastCloudSync = inicio;
-      lsSet(LS.sync, lastCloudSync); lsSet(LS.remote, lastRemoteModified);
-      estadoNube('Google Drive · sincronizado ✓'); mensajeNube('Sincronización completada' + (cloudUser ? ' (' + cloudUser.email + ').' : '.'));
-      linkCarpeta();
-    }).catch(function(err){
-      console.error('Error de sincronización 3dF:', err);
-      if (err && err.auth) cloudUser = null;
-      estadoNube(err && err.auth ? 'Google Drive: tocá Sincronizar para reconectar' : 'Error de sincronización');
-      mensajeNube('No se pudo sincronizar: ' + ((err && err.message) || 'revisá la conexión.'));
-    }).then(function(){
-      syncing = false;
-      if (lastLocalChange > lastCloudSync && tokenValido()) programarSync(true);
-    });
+    syncing = true; estadoNube('Sincronizando…'); mensajeNube('Sincronizando datos y fotos…');
+    // Esperar a que IndexedDB termine de cargar antes de intentar subir fotos locales.
+    return dbOp('readonly', function(s){ return s.getAll(); }).then(function(all){
+      (all || []).forEach(function(f){ photoCache[f.id] = f; });
+      return cloudClient.from(CLOUD_TABLE).select('data,updated_at').eq('user_id',cloudUser.id).maybeSingle();
+    }).then(function(res){
+        if (res.error) throw res.error;
+        var remote = res.data;
+        if (!remote) {
+          return subirFotos().then(guardarDocumentoNube).then(function(r){ if(r.error) throw r.error; });
+        }
+        var remoteTime = new Date(remote.updated_at || 0).getTime();
+        var localChanged = lastLocalChange > lastCloudSync;
+        var remoteChanged = remoteTime > lastCloudSync;
+        // Primera vinculación: no pisar silenciosamente datos locales preexistentes.
+        if (!lastCloudSync && localTieneDatos()) {
+          var conservar = confirm('Esta cuenta ya tiene un checklist en la nube y este dispositivo también tiene tareas guardadas. ¿Querés subir y conservar los datos de este dispositivo? Aceptar = subir este dispositivo. Cancelar = descargar la versión de la nube.');
+          if (conservar) return subirFotos().then(guardarDocumentoNube).then(function(r){ if(r.error) throw r.error; });
+          return aplicarDocumentoRemoto(remote);
+        }
+        if (lastCloudSync && localChanged && remoteChanged) {
+          var keepLocal = confirm('Hay cambios en este dispositivo y también en la nube. ¿Querés conservar este dispositivo y subir sus cambios? Aceptar = subir este dispositivo. Cancelar = descargar la versión de la nube.');
+          if (keepLocal) return subirFotos().then(guardarDocumentoNube).then(function(r){ if(r.error) throw r.error; });
+          return aplicarDocumentoRemoto(remote);
+        }
+        if (localChanged && !remoteChanged) {
+          return subirFotos().then(guardarDocumentoNube).then(function(r){ if(r.error) throw r.error; });
+        }
+        return aplicarDocumentoRemoto(remote);
+      })
+      .then(function(){
+        lastCloudSync = Date.now();
+        localStorage.setItem('3df-checklist-last-sync', String(lastCloudSync));
+        estadoNube('Sincronizado ✓'); mensajeNube('Sincronización completada.');
+      })
+      .catch(function(err){
+        console.error('Error de sincronización 3dF:',err);
+        estadoNube('Error de sincronización');
+        mensajeNube('No se pudo sincronizar: ' + (err.message || 'revisá la conexión y la configuración de Supabase.'));
+      })
+      .finally(function(){ syncing = false; });
   }
-  function programarSync(reintento){
-    if (!LS) return; // todavía inicializando
-    if (!reintento) {
-      lastLocalChange = Date.now();
-      lsSet(LS.change, lastLocalChange);
-    }
-    if (!GOOGLE_CLIENT_ID || !lsGet(LS.linked, false)) { estadoNube('Solo en este dispositivo'); return; }
-    if (!navigator.onLine) { estadoNube('Sin conexión · pendiente'); return; }
-    if (!tokenValido()) { estadoNube('Cambios pendientes · tocá Sincronizar para reconectar'); return; }
+  function programarSync(){
     if (syncing) return;
-    estadoNube('Cambios pendientes…');
+    lastLocalChange = Date.now();
+    try { localStorage.setItem('3df-checklist-local-change', String(lastLocalChange)); } catch(e){}
+    if (!cloudUser || !navigator.onLine) {
+      estadoNube(cloudUser ? 'Sin conexión · pendiente' : 'Solo en este dispositivo');
+      return;
+    }
     clearTimeout(syncTimer);
-    syncTimer = setTimeout(function(){ sincronizarAhora(false); }, 2000);
+    syncTimer = setTimeout(function(){ sincronizarAhora(); }, 1800);
   }
-  window.addEventListener('online', function(){ if (tokenValido()) sincronizarAhora(false); });
-  window.addEventListener('focus', function(){ if (tokenValido() && navigator.onLine) sincronizarAhora(false); });
+  window.addEventListener('online', function(){ if(cloudUser) sincronizarAhora(); });
+  window.addEventListener('focus', function(){ if(cloudUser && navigator.onLine) sincronizarAhora(); });
 
   document.getElementById('nube-login').addEventListener('click', function(){
-    if (!GOOGLE_CLIENT_ID) return abrirNube();
-    mensajeNube('Abriendo la ventana de Google…');
-    pedirToken('select_account').then(function(){ return sincronizarAhora(true); })
-      .catch(function(e){ mensajeNube(e.message || 'No se pudo iniciar sesión con Google.'); });
+    if (!cloudClient) return mensajeNube('No se pudo cargar la librería de Supabase.');
+    var email = document.getElementById('nube-email').value.trim();
+    var password = document.getElementById('nube-password').value;
+    if (!email || !password) return mensajeNube('Completá correo y contraseña.');
+    mensajeNube('Ingresando…');
+    cloudClient.auth.signInWithPassword({email:email,password:password}).then(function(r){
+      if(r.error) throw r.error;
+      mensajeNube('Sesión iniciada. Preparando sincronización…');
+      cloudUser = r.data.user;
+      return sincronizarAhora();
+    }).catch(function(e){ mensajeNube(e.message || 'No se pudo iniciar sesión.'); });
   });
-  document.getElementById('nube-sync').addEventListener('click', function(){ sincronizarAhora(true); });
+  document.getElementById('nube-registro').addEventListener('click', function(){
+    if (!cloudClient) return mensajeNube('No se pudo cargar la librería de Supabase.');
+    var email = document.getElementById('nube-email').value.trim();
+    var password = document.getElementById('nube-password').value;
+    if (!email || !password) return mensajeNube('Completá correo y contraseña.');
+    if (password.length < 8) return mensajeNube('Usá una contraseña de al menos 8 caracteres.');
+    mensajeNube('Creando cuenta…');
+    cloudClient.auth.signUp({email:email,password:password}).then(function(r){
+      if(r.error) throw r.error;
+      if(r.data.session){
+        cloudUser = r.data.user;
+        mensajeNube('Cuenta creada. Iniciando sincronización…');
+        return sincronizarAhora();
+      }
+      mensajeNube('Cuenta creada. Revisá tu correo para confirmar la dirección y luego iniciá sesión.');
+    }).catch(function(e){ mensajeNube(e.message || 'No se pudo crear la cuenta.'); });
+  });
+  document.getElementById('nube-sync').addEventListener('click', sincronizarAhora);
   document.getElementById('nube-salir').addEventListener('click', function(){
-    var t = accessToken;
-    accessToken = null; tokenExp = 0; cloudUser = null;
-    try { sessionStorage.removeItem(LS.token); } catch(e){}
-    lsSet(LS.linked, false);
-    if (t && window.google && google.accounts && google.accounts.oauth2) { try { google.accounts.oauth2.revoke(t, function(){}); } catch(e){} }
-    linkCarpeta();
-    estadoNube('Solo en este dispositivo');
-    mensajeNube('Sesión cerrada. Los datos siguen guardados en este dispositivo y el Excel queda en tu Google Drive.');
+    if (!cloudClient) return;
+    cloudClient.auth.signOut().then(function(r){
+      if(r.error) throw r.error;
+      cloudUser = null; uploadedPhotos = {};
+      estadoNube('Solo en este dispositivo'); mensajeNube('Sesión cerrada. Los datos locales permanecen en este dispositivo.');
+    }).catch(function(e){ mensajeNube(e.message || 'No se pudo cerrar sesión.'); });
   });
-
-  // Al abrir la app: si hay un token vigente en esta sesión, sincronizar; si no, avisar.
-  if (!GOOGLE_CLIENT_ID) estadoNube('Solo en este dispositivo');
-  else if (tokenValido()) { estadoNube('Conectando con Google Drive…'); sincronizarAhora(false); }
-  else if (lsGet(LS.linked, false)) estadoNube('Google Drive: tocá Sincronizar para reconectar');
-  else estadoNube('Solo en este dispositivo');
+  if (cloudClient) {
+    cloudClient.auth.getSession().then(function(r){
+      if(r.error) throw r.error;
+      if(r.data.session){
+        cloudUser = r.data.session.user;
+        estadoNube('Conectando con la nube…');
+        sincronizarAhora();
+      }
+    }).catch(function(e){ console.warn('No se pudo recuperar la sesión:',e); });
+    cloudClient.auth.onAuthStateChange(function(event, session){
+      if (session && session.user) {
+        cloudUser = session.user;
+        if (event === 'SIGNED_IN') sincronizarAhora();
+      } else if (event === 'SIGNED_OUT') {
+        cloudUser = null; uploadedPhotos = {};
+        estadoNube('Solo en este dispositivo');
+      }
+    });
+  }
 
 })();
 </script>
